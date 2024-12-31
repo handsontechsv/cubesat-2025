@@ -1,8 +1,11 @@
 import cv2
 import numpy as np
+print(np.__version__)
 import matplotlib.pyplot as plt
 
-threshold = 70
+BRIGHTNESS_THRESHOLD = 70
+REPO_PATH = ""     #Your github repo path: ex. /home/pi/FlatSatChallenge
+FOLDER_PATH = ""   #Your image folder path in your GitHub repo: ex. /Images
 
 def process_image(img, top_left_lat=0, top_left_lon=0, bot_right_lat=0.180018002, bot_right_lon=0.180018002, sections=(20, 20), km_per_section = (3, 3)):
 
@@ -24,11 +27,11 @@ def process_image(img, top_left_lat=0, top_left_lon=0, bot_right_lat=0.180018002
             #plt.imshow(section, cmap='gray')
             #plt.show()
             avg = np.mean(section)
-            count = np.count_nonzero(section > threshold)
+            count = np.count_nonzero(section > BRIGHTNESS_THRESHOLD)
             num_bright_pixels[x//section_width, y//section_height] = count/ (section_height * section_width)
-            print("count: " + str(count) + " total: " + str(section_height * section_width))
-            print("%: " + str(count/ (section_height * section_width)))
-            print("avg: " + str(avg))
+            #print("count: " + str(count) + " total: " + str(section_height * section_width))
+            #print("%: " + str(count/ (section_height * section_width)))
+            #print("avg: " + str(avg))
             data = {}
             data["lat"] = top_left_lat
             data["lon"] = top_left_lon
@@ -95,26 +98,31 @@ def calculate_section_size(top_left_lat, top_left_lon, bot_right_lat, bot_right_
   print(total_km_lon)
   return (int(total_km_lat // size_in_km[0]), int(total_km_lon // size_in_km[1]))
 
-image_path = '45LosAngeles_1.png'
-img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-if img is None:
-    raise FileNotFoundError(f"Image not found at path: {image_path}")
-top_left_lat = 34.19
-top_left_lon = -118.53
-bot_right_lat = 33.78
-bot_right_lon = -118.04
+def main(image_path = 'sample_image_data/45LosAngeles_1.png', \
+        top_left_lat = 34.19, \
+        top_left_lon = -118.53, \
+        bot_right_lat = 33.78, \
+        bot_right_lon = -118.04):
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        raise FileNotFoundError(f"Image not found at path: {image_path}")
+    
 
 
-img, top_left_lat, top_left_lon, bot_right_lat, bot_right_lon = crop_image(img, top_left_lat, top_left_lon, bot_right_lat, bot_right_lon)
+    img, top_left_lat, top_left_lon, bot_right_lat, bot_right_lon = crop_image(img, top_left_lat, top_left_lon, bot_right_lat, bot_right_lon)
 
-sections = calculate_section_size(top_left_lat, top_left_lon, bot_right_lat, bot_right_lon, (3, 3))
-print("sections:" + str(sections))
+    sections = calculate_section_size(top_left_lat, top_left_lon, bot_right_lat, bot_right_lon, (3, 3))
+    print("sections:" + str(sections))
 
-data = process_image(img, top_left_lat, top_left_lon, bot_right_lat, bot_right_lon, sections, (3, 3))
-print(data)
-#contrast = brightness_matrix.std()
-#display_color_matrix(test_matrix)
-#display_color_matrix(brightness_matrix, sections)
+    data = process_image(img, top_left_lat, top_left_lon, bot_right_lat, bot_right_lon, sections, (3, 3))
+    print(data)
+    return data
+    #contrast = brightness_matrix.std()
+    #display_color_matrix(test_matrix)
+    #display_color_matrix(brightness_matrix, sections)
 
-#print(test_matrix)
-#print(brightness_matrix)
+    #print(test_matrix)
+    #print(brightness_matrix)
+
+if __name__== "__main__":
+    main()
