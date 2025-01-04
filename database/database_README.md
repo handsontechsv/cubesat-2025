@@ -5,7 +5,7 @@
 | Top Left Latitude | Top Left Longitude | Average Brightness | Lights On/Off                | Year | Month | Day | Hour     | Minute     | Second     |
 |-------------------|--------------------|--------------------|------------------------------|------|-------|-----|----------|------------|------------|
 | Float             | Float              | Float              | Float                        | Int  | Int   | Int | Int      | Int        | Int        |
-| Latitude          | Longitude          | Average Brightness | 0-1 Percent of Bright Pixels | Year | Month | Day | GMT Hour | GMT Minute | GMT Second |
+| Latitude          | Longitude          | Average Brightness | 0-1 Percent of Bright Pixels | Year | Month | Day | GPS Hour | GPS Minute | GPS Second |
 
 
 ## API
