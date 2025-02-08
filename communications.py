@@ -13,8 +13,11 @@ def main():
     try:
         while True:
             #sudo btmgmt find | grep "C4:91:0C:A7:EA:EF" 
-            something = subprocess.Popen(["sudo", "btmgmt",  "|", "grep", ground_station_address], stdout=subprocess.PIPE, text=True)
-            print(something.stdout.read())
+            findProcess = subprocess.Popen(["btmgmt", "find"], stdout=subprocess.PIPE, text=True)
+            grepProcess = subprocess.Popen(["grep", ground_station_address], stdin = findProcess.stdout, stdout = subprocess.PIPE, text = True)
+            print("1: " + findProcess.stdout.read() + " 2: " + grepProcess.stdout.read())
+            print(type( grepProcess.stdout.read()))
+            
             pass
     except KeyboardInterrupt:
         print("Exiting...")
