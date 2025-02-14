@@ -1,0 +1,9 @@
+[restore-stream]
+Audio/Sink:node.name:auto_null:channelMap=FL;FR;
+Audio/Sink:node.name:auto_null:channelVolumes=1.0;1.0;
+Audio/Sink:node.name:auto_null:mute=false
+Audio/Sink:node.name:auto_null:volume=1.0
+Output/Audio:media.name:胡章好’s\sMacBook\sPro\s(codec\sSBC):channelMap=FL;FR;
+Output/Audio:media.name:胡章好’s\sMacBook\sPro\s(codec\sSBC):channelVolumes=1.0;1.0;
+Output/Audio:media.name:胡章好’s\sMacBook\sPro\s(codec\sSBC):mute=false
+Output/Audio:media.name:胡章好’s\sMacBook\sPro\s(codec\sSBC):volume=1.0
