@@ -1,19 +1,5 @@
 import re
 import subprocess
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
-
-class MyEventHandler(FileSystemEventHandler):
-    def on_created(self, event):
-        if not event.is_directory: # Check if it's a file
-            print(f"File created: {event.src_path}")
-            # Add your notification logic here (e.g., send an email, trigger an alert)
-            # Check the file name
-            if(event.src_path == "task_planning.txt"):
-                # File should list the next times to take pictures
-                # Save the information somewhere to be used by the satellite
-                
-                pass
 
 def downlink_send():
     print("Hello, World!")
