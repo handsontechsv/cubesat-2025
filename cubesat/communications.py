@@ -4,7 +4,8 @@ import subprocess
 def downlink_send():
     print("Hello, World!")
     ground_station_address = "C4:91:0C:A7:EA:EF" #Yujie's mac address is C4:91:0C:A7:EA:EF
-    file_path = "/home/raspberrypi/cubesat-2025/cubesat/local_database/placeholder.txt"
+    file_path = "/home/raspberrypi/cubesat-2025/cubesat/files_to_send/placeholder.txt"
+    recieve_path = "/home/raspberrypi/cubesat-2025/cubesat/recieved_files"
     gs_tasks_path = "haha.txt"
     RSSI_threshold = -70
     # Subprocess to connect to pi via bluetooth
@@ -35,9 +36,10 @@ def downlink_send():
                 print(send_process.stdout.read())
 
                 print("Now fetching file from the ground station")
-                fetch_process = subprocess.Popen(["obexftp", "-b", ground_station_address, "-g", \
-                                                gs_tasks_path], \
-                                                stdout = subprocess.PIPE, text = True)
+                #This can only fetch from the Downloads Folder or whichever folder is public for bluetooth sharing!!!
+                fetch_process = subprocess.Popen(["obexftp", "-b", ground_station_address, \
+                                                "-g", gs_tasks_path], \
+                                                stdout = subprocess.PIPE, cwd = recieve_path, text = True)
             
         else:
             print("Device not found!!")
