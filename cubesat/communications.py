@@ -19,6 +19,7 @@ def downlink_send():
     print("Hello, World!")
     ground_station_address = "C4:91:0C:A7:EA:EF" #Yujie's mac address is C4:91:0C:A7:EA:EF
     file_path = "/home/raspberrypi/cubesat-2025/local_database/placeholder.txt"
+    gs_tasks_path = "ground_station/task_planning.txt"
     RSSI_threshold = -70
     # Subprocess to connect to pi via bluetooth
     # for loop: send a file (placeholder for now) to pi w/ btmgmt and record RSSI
@@ -46,6 +47,11 @@ def downlink_send():
                                                 stdout = subprocess.PIPE, text = True)
                 print("Sending a file to ground station!")
                 print(send_process.stdout.read())
+
+                print("Now fetching file from the ground station")
+                fetch_process = subprocess.Popen(["obexftp", "-b", ground_station_address, "-g", \
+                                                gs_tasks_path], \
+                                                stdout = subprocess.PIPE, text = True)
             
         else:
             print("Device not found!!")
@@ -55,20 +61,6 @@ def downlink_send():
         print("Exiting...")
 
         
-
-def uplink_recieve():
-    path_to_watch = "/Users/yujiewu/Downloads" # Current directory, change to your desired path
-    event_handler = MyEventHandler()
-    observer = Observer()
-    observer.schedule(event_handler, path_to_watch, recursive=False)
-    observer.start()
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
-   
 
 if __name__== "__main__": 
     downlink_send()

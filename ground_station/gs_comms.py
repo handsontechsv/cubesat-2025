@@ -1,4 +1,5 @@
 import time
+import re
 import subprocess
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -9,15 +10,14 @@ class MyEventHandler(FileSystemEventHandler):
             print(f"File created: {event.src_path}")
             # Add your notification logic here (e.g., send an email, trigger an alert)
             # Check the file name
-            if(event.src_path == "satellite_report.json"):
-                # Json should contain image path, confidence interval, and lat/lon. (More if needed)
-                
-                # Read the file for power outage alert
-                # If alert, send email to operators
+            # Json should contain image path, confidence interval, and lat/lon. (More if needed)
+            
+            # Read the file for power outage alert
+            # If alert, send email to operators
 
-                # Perhaps it would be better to move uplink_send to the control loop
-                uplink_send()
-                pass
+            # Perhaps it would be better to move uplink_send to the control loop
+            uplink_send()
+            pass
 
 def uplink_send():
     print("GS Attempting to send data to satellite")
