@@ -4,8 +4,8 @@ import subprocess
 def downlink_send():
     print("Hello, World!")
     ground_station_address = "C4:91:0C:A7:EA:EF" #Yujie's mac address is C4:91:0C:A7:EA:EF
-    file_path = "/home/raspberrypi/cubesat-2025/local_database/placeholder.txt"
-    gs_tasks_path = "ground_station/task_planning.txt"
+    file_path = "/home/raspberrypi/cubesat-2025/cubesat/local_database/placeholder.txt"
+    gs_tasks_path = "haha.txt"
     RSSI_threshold = -70
     # Subprocess to connect to pi via bluetooth
     # for loop: send a file (placeholder for now) to pi w/ btmgmt and record RSSI
