@@ -1,7 +1,7 @@
 import re
 import subprocess
 
-def downlink_send():
+def downlink_send_and_fetch():
     print("Hello, World!")
     ground_station_address = "C4:91:0C:A7:EA:EF" #Yujie's mac address is C4:91:0C:A7:EA:EF
     file_path = "/home/raspberrypi/cubesat-2025/cubesat/files_to_send/placeholder.txt"
