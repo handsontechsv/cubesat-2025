@@ -1,45 +1,65 @@
 import time
 import communications
 import adcs
-import take_picture
+#import take_picture
 import subprocess
 import os
 
-def get_task_times():
+def get_task_times(old_task_times):
     #TODO: modify this to match the correct file format we are using!!
-    '''
-    if os.path.exists("cubesat/recieved_files/task_plan.txt"):
-        task_times = []
-        with open("task_plan.txt", "r") as file:
+    if os.path.exists("cubesat/recieved_files/cubesat_task_plan.txt"):
+        task_times_new = []
+        with open("cubesat/recieved_files/cubesat_task_plan.txt", "r") as file:
+            #TODO: if the file format is invalid, ignore the file instead of producing error
             for line in file:
-                task_times.append(int(line))
+                #TODO: remove the + time.time() and make the task plan file return a time since epoch instead
+                task_times_new.append(int(line) + time.time())
         #delete the file after finished
-        os.remove("task_plan.txt")
-        return task_times
-    '''
+        os.remove("cubesat/recieved_files/cubesat_task_plan.txt")
+        return task_times_new
+    else:
+        return old_task_times
+
+def temp_file_adder():
+    file_dir = "/home/raspberrypi/cubesat-2025/cubesat/files_to_send"
+    file_name = "placeholder" + str(time.time()) +".txt"
+    path = file_dir+"/"+file_name
+    with open(path, "w") as file:
+        file.write("placeholder for the images")
+    print("New \"image\" created... (me when I lie) ")
+    #ls_process = subprocess.Popen(["ls"], cwd = file_dir, text = True)
+    #print(ls_process.stdout.read())
 
 def main():
+    print("CubeSat OPERATION BEGIN")
     #init RSSI / ground station detection subprocess
-    subprocess.Popen(["python3", "communications.py"])
+    comms_sp = subprocess.Popen(["python3", "cubesat/communications.py"], text = True)
     last_cycle_time = time.time()
     task_times = [] #may be updated via task plan from ground station
     try:
         while True:
             #Update the task_times list if the task plan file exists
             #task_times = get_task_times() #see above for format
-            time.sleep(0.5)
+            task_times = get_task_times(task_times)
+            time.sleep(1)
             # Track the CubeSat's location
-            print("CubeSat is tracking location")
+            #print("CubeSat is tracking location")
+            
             # If CubeSat time is within 10 seconds of an item in task_times, take a picture
+            print(task_times)
             for task_time in task_times:
-                if(task_time - last_cycle_time < 10):
+                if(abs(task_time - time.time()) < 10):
                     print("CubeSat reached location, begin taking picture")
                     #take_picture.take_photo()
                     # create a subprocess to take picture and process it
                     # subprocess.Popen(["python3", "take_picture.py"]) <-- this, but take_picture needs to include the processing
-                #delete the task_time from task_times
-                task_times.remove(task_time)
+                    temp_file_adder()
+                    #delete the task_time from task_times
+                    task_times.remove(task_time)
+                
+            #Results of RSSI subprocessprint(comms_sp.stdout.readline())
             last_cycle_time = time.time()
+            #print("Loop end at " + str(last_cycle_time))
             
     except KeyboardInterrupt:
         print("CubeSat Stopped")
