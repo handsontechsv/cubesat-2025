@@ -1,3 +1,18 @@
+CUBESAT BLUETOOTH SETUP
+
+the current OS i'm using is bookworm pls upgrade to it
+
+in terminal, do sudo nano /etc/rc.local and copy the contents of the rc.local in this git
+THEN make rc.local executable by chmod a+x /etc/rc.local
+If you do ls -l /etc/rc.local it should say something like -rwxr-xr-x which means all users can execute it
+sudo reboot to see if it runs
+check the log file in /home/raspberrypi/cubesat-2025/cubesat/log.txt to see if it is printing stuff by doing tail -F /home/raspberrypi/cubesat-2025/cubesat/log.txt
+
+Also install bluez using apt install python3-PyBluez
+
+
+
+
 Reguarding the cubesat control loop:
 
 Downlinking

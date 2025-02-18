@@ -6,16 +6,15 @@ import subprocess
 import os
 
 def get_task_times(old_task_times):
-    #TODO: modify this to match the correct file format we are using!!
-    if os.path.exists("cubesat/recieved_files/cubesat_task_plan.txt"):
+    if os.path.exists("/home/raspberrypi/cubesat-2025/cubesat/recieved_files/cubesat_task_plan.txt"):
         task_times_new = []
-        with open("cubesat/recieved_files/cubesat_task_plan.txt", "r") as file:
+        with open("/home/raspberrypi/cubesat-2025/cubesat/recieved_files/cubesat_task_plan.txt", "r") as file:
             #TODO: if the file format is invalid, ignore the file instead of producing error
             for line in file:
                 #TODO: remove the + time.time() and make the task plan file return a time since epoch instead
                 task_times_new.append(int(line) + time.time())
         #delete the file after finished
-        os.remove("cubesat/recieved_files/cubesat_task_plan.txt")
+        os.remove("/home/raspberrypi/cubesat-2025/cubesat/recieved_files/cubesat_task_plan.txt")
         return task_times_new
     else:
         return old_task_times
@@ -26,14 +25,14 @@ def temp_file_adder():
     path = file_dir+"/"+file_name
     with open(path, "w") as file:
         file.write("placeholder for the images")
-    print("New \"image\" created... (me when I lie) ")
+    print("New \"image\" created... ")
     #ls_process = subprocess.Popen(["ls"], cwd = file_dir, text = True)
     #print(ls_process.stdout.read())
 
 def main():
     print("CubeSat OPERATION BEGIN")
     #init RSSI / ground station detection subprocess
-    comms_sp = subprocess.Popen(["python3", "cubesat/communications.py"], text = True)
+    comms_sp = subprocess.Popen(["python3", "-u", "/home/raspberrypi/cubesat-2025/cubesat/communications.py"], text = True)
     last_cycle_time = time.time()
     task_times = [] #may be updated via task plan from ground station
     try:
@@ -46,16 +45,17 @@ def main():
             #print("CubeSat is tracking location")
             
             # If CubeSat time is within 10 seconds of an item in task_times, take a picture
-            print(task_times)
             for task_time in task_times:
-                if(abs(task_time - time.time()) < 10):
-                    print("CubeSat reached location, begin taking picture")
+                current_time = time.time()
+                if(abs(task_time - current_time) < 10):
+                    print(f"CubeSat reached location at time {current_time}, begin taking picture")
                     #take_picture.take_photo()
                     # create a subprocess to take picture and process it
                     # subprocess.Popen(["python3", "take_picture.py"]) <-- this, but take_picture needs to include the processing
                     temp_file_adder()
                     #delete the task_time from task_times
                     task_times.remove(task_time)
+                    print(f"Next task times: {task_times}")
                 
             #Results of RSSI subprocessprint(comms_sp.stdout.readline())
             last_cycle_time = time.time()
