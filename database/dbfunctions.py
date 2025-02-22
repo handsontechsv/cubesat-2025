@@ -1,4 +1,5 @@
 import sqlite3
+import time
 
 
 def create():
@@ -50,3 +51,22 @@ def get():
 
 def getID(lat, long):
     return lat + " " + long
+
+
+def check_size():
+    conn = sqlite3.connect('coords.db')
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA page_count;")
+    page_count = cursor.fetchone()[0]
+    cursor.execute("PRAGMA page_size;")
+    page_size = cursor.fetchone()[0]
+    db_size = page_count * page_size
+    if (db_size > 10*1024*1028*1024):
+        print("delete")
+        cursor.execute("DELETE FROM coordinates WHERE random() > 5534023222112865485")
+    cursor.close()
+
+
+while True:
+    check_size()
+    time.sleep(2*24*60*60)
