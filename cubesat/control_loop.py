@@ -15,6 +15,7 @@ def get_task_times(old_task_times):
                 task_times_new.append(int(line) + time.time())
         #delete the file after finished
         os.remove("/home/raspberrypi/cubesat-2025/cubesat/recieved_files/cubesat_task_plan.txt")
+        print("Task info loaded")
         return task_times_new
     else:
         return old_task_times
@@ -25,7 +26,7 @@ def temp_file_adder():
     path = file_dir+"/"+file_name
     with open(path, "w") as file:
         file.write("placeholder for the images")
-    print("New \"image\" created... ")
+    print("New image created")
     #ls_process = subprocess.Popen(["ls"], cwd = file_dir, text = True)
     #print(ls_process.stdout.read())
 
@@ -35,12 +36,15 @@ def main():
     comms_sp = subprocess.Popen(["python3", "-u", "/home/raspberrypi/cubesat-2025/cubesat/communications.py"], text = True)
     last_cycle_time = time.time()
     task_times = [] #may be updated via task plan from ground station
+    fake = 0
     try:
         while True:
             #Update the task_times list if the task plan file exists
             #task_times = get_task_times() #see above for format
             task_times = get_task_times(task_times)
             time.sleep(1)
+            #print(f"Next task times: {task_times}")
+            #(fake)
             # Track the CubeSat's location
             #print("CubeSat is tracking location")
             
@@ -52,10 +56,14 @@ def main():
                     #take_picture.take_photo()
                     # create a subprocess to take picture and process it
                     # subprocess.Popen(["python3", "take_picture.py"]) <-- this, but take_picture needs to include the processing
-                    temp_file_adder()
+                    if fake == 1:
+                        print("\n  !! OUTAGE DETECTED !!  \n")
+                        temp_file_adder()
+                    else :
+                        fake = 1
+                        print("\n      No outage \n")
                     #delete the task_time from task_times
                     task_times.remove(task_time)
-                    print(f"Next task times: {task_times}")
                 
             #Results of RSSI subprocessprint(comms_sp.stdout.readline())
             last_cycle_time = time.time()

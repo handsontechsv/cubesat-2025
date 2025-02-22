@@ -13,7 +13,7 @@ class GroundStationDiscoverer(bluetooth.DeviceDiscoverer):
         self.done = False
 
     def device_discovered(self, address, device_class, rssi, name):
-        print(f"Find device at address {address} of class {device_class} with rssi {rssi}: {name}")
+        #print(f"Find device at address {address} of class {device_class} with rssi {rssi}: {name}")
         if(address == self.ground_station_address):
             self.ground_station_rssi = rssi
 

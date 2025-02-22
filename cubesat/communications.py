@@ -35,7 +35,7 @@ def main():
                     #loop through every file in the files_to_send folder
                     for file in os.listdir(files_to_send_dir):
                         print("Sending an orbit result file to ground station!")
-                        print(file)
+                        #print(file)
                         send_process = subprocess.Popen(["/usr/bin/obexftp", "-b", ground_station_address, "-p", \
                                                         files_to_send_dir + "/" + file], \
                                                         stdout = subprocess.PIPE, stderr = subprocess.PIPE,\
@@ -45,19 +45,21 @@ def main():
                         #verify if file was sent successfully
                         #returncode doesn't work, so regex the output...
                         if (send_process.returncode == 0 or send_process.returncode == 255):
-                            print("Orbit result file " + file+ " sent successfully!")
+                            print("Orbit result file sent successfully!")
                             #delete the file just sent, or mark it invalid
                             os.remove(files_to_send_dir + "/" + file)
                             print("sent file deleted")
                         else:
-                            print("Orbit result file " + file+ " NOT sent successfully! (will attempt next orbit)")
+                            print("Orbit result file NOT sent successfully! (will attempt next orbit)")
 
                     print("Now fetching assignment file from the ground station")
                     #This can only fetch from the Downloads Folder or whichever folder is public for bluetooth sharing!!!
                     fetch_process = subprocess.Popen(["obexftp", "-b", ground_station_address, \
                                                     "-g", gs_tasks_path], \
-                                                    stdout = subprocess.PIPE, cwd = recieve_path, text = True)
-                    print(fetch_process.stdout.read())
+                                                    stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = recieve_path, text = True)
+                    stdout, stderr = fetch_process.communicate()
+                    #print(stdout)
+                    #print(stderr)
                     print("Assignment file recieved.")
                             
                     print("CUBESAT LEAVES GROUND STATION.")
