@@ -60,7 +60,7 @@ def get_list(lat_longs: list):
     return ret
 
 
-def get_all():
+def print_all():
     conn = sqlite3.connect("coords.db")
     cursor = conn.cursor()
     rows = cursor.execute('''SELECT * FROM coordinates''')

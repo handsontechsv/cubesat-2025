@@ -1,4 +1,5 @@
-import database.dbfunctions
+import database.dbfunctions as db
+from database.dbfunctions import DbCell
 
 import cv2
 import numpy as np
@@ -214,21 +215,6 @@ def detect_outage(section_bright, section_total, normal_bright, normal_total, th
     return (section_bright / section_total - normal_bright / normal_total) > threshold
 
 
-def to_database_format(section):
-    return [
-        section["lat"],
-        section["long"],
-        section["bright_pixels"],
-        section["total_pixels"],
-        section["date"].year,
-        section["date"].month,
-        section["date"].day,
-        section["date"].hour,
-        section["date"].minute,
-        section["date"].second
-    ]
-
-
 def send_json(section):
     
     data = {
@@ -251,48 +237,39 @@ def send_json(section):
 def determine_outage(section_list, threshold=0.8):
     for section in section_list:
         # find previous section from database
-        prev_section = get_filter(getID(section["lat"], section["long"]))
-        if (prev_section == None):
-            write(to_database_format(section))
-        if detect_outage(section["bright_pixels"], section["total_pixels"], prev_section["bright_pixels"], prev_section["total_pixels"]):
+        prev_section = db.get_one(section["lat"], section["long"])
+        if prev_section and detect_outage(section["bright_pixels"], section["total_pixels"], prev_section["bright_pixels"], prev_section["total_pixels"]):
             # THERE HAS BEEN AN OUTAGE!!
             # Send json to ground station!
             send_json(section)
         else:
+            db.write_one(section["lat"], section["long"], section["bright_pixels"], section["total_pixels"], section["date"])
             # THERE HAS NOT BEEN AN OUTAGE!!
             # Save current data to database (cause no outage)
-            write(to_database_format(section))
-        pass
+
+
+def main():
+    db.create()
+    arr = np.random.randint(0, 255, (270, 480))
+    # print(f"Original array: {arr}")
+    print(f"Original array shape: {arr.shape}")
+    print("---")
+    arr1, new_center, new_size = crop_image(arr, 0, 0)
+    # print(f"Cropped array: {arr1}")
+    print(f"Cropped array shape: {arr1.shape}")
+    print(f"Cropped array center: {new_center}")
+    print(f"Cropped array squares shape: {new_size}")
+    print("---")
+    section_list = split_image(arr1, 0, 0)
+    for section in section_list:
+        print(section)
+
+    section = section_list[0]
+    # send_json(section)
+    determine_outage(section_list)
+    db.print_all()
 
 
 if __name__ == "__main__":
-    # image = read_image("sample.jpg")
-    # save_image(image, "./files_to_send/") # TODO: Edit image saving address
-    # normal_image = process_image(image, 0)
-    # section_list = split_image(normal_image)
-    # determine_outage(section_list)
-
-    # display_image(process_image(img, 0))
-    # save_image(darken_image(rabbit, 1.5, 0), "darkrabbit.jpg")
-    # darkrabbit = read_image("darkrabbit.jpg")
-    # display_image(darkrabbit)
-    # save_image(process_image(darkrabbit, 0), "mod-darkrabbit.jpg")
+    main()
     pass
-
-database.dbfunctions.create_table()
-arr = np.random.randint(0, 255, (270, 480))
-# print(f"Original array: {arr}")
-print(f"Original array shape: {arr.shape}")
-print("---")
-arr1, new_center, new_size = crop_image(arr, 0, 0)
-# print(f"Cropped array: {arr1}")
-print(f"Cropped array shape: {arr1.shape}")
-print(f"Cropped array center: {new_center}")
-print(f"Cropped array squares shape: {new_size}")
-print("---")
-section_list = split_image(arr1, 0, 0)
-for section in section_list:
-    print(section)
-
-section = section_list[0]
-send_json(section)
