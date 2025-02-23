@@ -279,7 +279,7 @@ if __name__ == "__main__":
     # save_image(process_image(darkrabbit, 0), "mod-darkrabbit.jpg")
     pass
 
-
+database.dbfunctions.create_table()
 arr = np.random.randint(0, 255, (270, 480))
 # print(f"Original array: {arr}")
 print(f"Original array shape: {arr.shape}")

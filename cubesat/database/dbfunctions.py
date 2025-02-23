@@ -1,6 +1,16 @@
 import sqlite3
 import time
+from datetime import datetime
 
+
+class DbCell:
+    def __init__(self, lat, lng, bright, total, iso8601):
+        self.lat = lat
+        self.lng = lng
+        self.bright = bright
+        self.total = total
+        date = datetime.fromisoformat(iso8601)
+        self.date = date
 
 def create():
     conn = sqlite3.connect('coords.db')
@@ -9,51 +19,48 @@ def create():
     cursor.execute('''CREATE TABLE IF NOT EXISTS coordinates(
     Top_Left_Lat REAL,
     Top_Left_long REAL,
-    Top_Left_x_km REAL,
-    Brightness REAL,
-    Lights REAL,
-    Year INTEGER,
-    Month INTEGER,
-    Day INTEGER,
-    Hour INTEGER,
-    Minute INTEGER,
-    Second INTEGER); ''')
+    Bright_pixels REAL,
+    Total_pixels REAL,
+    Date TEXT); ''')
 
 
-def write(data: list):
+def delete_db():
     conn = sqlite3.connect('coords.db')
     cursor = conn.cursor()
-    val = str(data[0]) + ", " + str(data[1]) + ", " + str(data[2]) + ", " + str(data[3]) + ", " + str(data[4]) + \
-        ", " + str(data[5]) + ", " + str(data[6]) + ", " + str(data[7]) + ", " + str(data[8]) + ", " + str(data[9])
-    cursor.execute(f'''INSERT INTO coordinates VALUES({val}); ''')
+    cursor.execute('''DROP TABLE coordinates;''')
+    conn.commit()
+    conn.close()
+
+
+def write_one(lat, lng, bright, total, date: datetime):
+    conn = sqlite3.connect('coords.db')
+    cursor = conn.cursor()
+    date_iso8601 = date.isoformat()
+    cursor.execute(f'''INSERT INTO coordinates VALUES({lat}, {lng}, {bright}, {total}, "{date_iso8601}");''')
     conn.commit()
 
 
-def get_filter(lat_long: str):
+def get_one(lat, lng):
     conn = sqlite3.connect("coords.db")
     cursor = conn.cursor()
-    # ind = lat_long.find(" ")
-    lat = lat_long.split(" ")[0]
-    long = lat_long.split(" ")[1]
-    rows = cursor.execute('''SELECT * FROM coordinates WHERE Top_Left_Lat = ''' + lat +  ''' AND Top_Left_Long = ''' + long)
+    rows = cursor.execute(f'''SELECT * FROM coordinates WHERE Top_Left_Lat = {lat} AND Top_Left_Long = {lng}''')
     ret = []
-    for i in rows:
-        ret.append(i)
+    for row in rows:
+        print(row)
+        ret.append(DbCell(*row))
     return ret
 
 
-def get_list(lat_long: list):
+def get_list(lat_longs: list):
     conn = sqlite3.connect("coords.db")
     cursor = conn.cursor()
     ret = []
-    for lat_val, long_val in lat_long:
-        rows = cursor.execute('''SELECT * FROM coordinates WHERE Top_Left_Lat = ''' + lat_val +  ''' AND Top_Left_Long = ''' + long_val)
-        for i in rows:
-            ret.append(i)
+    for lat_val, long_val in lat_longs:
+        ret += get_one(lat_val, long_val)
     return ret
 
 
-def get():
+def get_all():
     conn = sqlite3.connect("coords.db")
     cursor = conn.cursor()
     rows = cursor.execute('''SELECT * FROM coordinates''')
@@ -81,6 +88,14 @@ def check_size():
 
 
 if __name__ == "__main__":
+    delete_db()
+    create()
+    write_one(1, 2, 3, 4, datetime.now())
+    print(get_one(1, 2))
+    got = get_one(1, 2)[0]
+    print(got.lat)
+    '''
     while True:
         check_size()
         time.sleep(2*24*60*60)
+    '''
