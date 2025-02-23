@@ -212,6 +212,7 @@ def split_image(normal_image, lat_val, long_val):
 
 
 def detect_outage(section_bright, section_total, normal_bright, normal_total, threshold=0):
+    print('all params:', section_bright, section_total, normal_bright, normal_total)
     return (section_bright / section_total - normal_bright / normal_total) > threshold
 
 
@@ -225,7 +226,9 @@ def send_json(section):
         "confidence interval": 0.1 # currently, this value is the threshold, not the confidence interval. not sure what it's for?
     }
 
-    filename = "outage.json"
+    time_str = section["date"].strftime("%Y-%m-%d-%H-%M-%S-%f")
+
+    filename = f"cubesat/files_to_send/outage{time_str}.json"
 
     with open(filename, 'w') as file:
         json.dump(data, file, indent=4)
@@ -234,21 +237,24 @@ def send_json(section):
 
 
 
-def determine_outage(section_list, threshold=0.8):
+def determine_outage(section_list, threshold=0.0):
     for section in section_list:
         # find previous section from database
         prev_section = db.get_one(section["lat"], section["long"])
-        if prev_section and detect_outage(section["bright_pixels"], section["total_pixels"], prev_section["bright_pixels"], prev_section["total_pixels"]):
-            # THERE HAS BEEN AN OUTAGE!!
-            # Send json to ground station!
-            send_json(section)
-        else:
-            db.write_one(section["lat"], section["long"], section["bright_pixels"], section["total_pixels"], section["date"])
-            # THERE HAS NOT BEEN AN OUTAGE!!
-            # Save current data to database (cause no outage)
+        if prev_section:
+            db_cell = prev_section[0]
+            if detect_outage(section["bright_pixels"], section["total_pixels"], db_cell.bright, db_cell.total, threshold):
+                # THERE HAS BEEN AN OUTAGE!!
+                # Send json to ground station!
+                send_json(section)
+                continue
+        db.write_one(section["lat"], section["long"], section["bright_pixels"], section["total_pixels"], section["date"])
+        # THERE HAS NOT BEEN AN OUTAGE!!
+        # Save current data to database (cause no outage)
 
 
 def main():
+    # db.delete_db()
     db.create()
     arr = np.random.randint(0, 255, (270, 480))
     # print(f"Original array: {arr}")
