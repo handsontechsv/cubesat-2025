@@ -5,9 +5,11 @@ import time
 def create():
     conn = sqlite3.connect('coords.db')
     cursor = conn.cursor()
+    # All measurements defined from top left of square
     cursor.execute('''CREATE TABLE IF NOT EXISTS coordinates(
     Top_Left_Lat REAL,
     Top_Left_long REAL,
+    Top_Left_x_km REAL,
     Brightness REAL,
     Lights REAL,
     Year INTEGER,
@@ -40,6 +42,17 @@ def get_filter(lat_long: str):
     return ret
 
 
+def get_list(lat_long: list):
+    conn = sqlite3.connect("coords.db")
+    cursor = conn.cursor()
+    ret = []
+    for lat_val, long_val in lat_long:
+        rows = cursor.execute('''SELECT * FROM coordinates WHERE Top_Left_Lat = ''' + lat_val +  ''' AND Top_Left_Long = ''' + long_val)
+        for i in rows:
+            ret.append(i)
+    return ret
+
+
 def get():
     conn = sqlite3.connect("coords.db")
     cursor = conn.cursor()
@@ -67,6 +80,7 @@ def check_size():
     cursor.close()
 
 
-while True:
-    check_size()
-    time.sleep(2*24*60*60)
+if __name__ == "__main__":
+    while True:
+        check_size()
+        time.sleep(2*24*60*60)
