@@ -34,24 +34,20 @@ def rotate(image, rotation_angle):
     return rotated_image
 
 
+MEAN = 100
+STDEV = 80
 def standardize(image):
     mean = np.mean(image)
     stdev = np.std(image)
 
     print(f"BEFORE: mean: {mean} || stdev: {stdev}")
 
-    standardized_image = ((image - mean) / stdev) * 25 + 120
+    standardized_image = ((image - mean) / stdev) * STDEV + MEAN
     standardized_image = np.clip(standardized_image, 0, 255).astype(np.uint8)
 
     print(f"AFTER: mean: {np.mean(standardized_image)} || stdev: {np.std(standardized_image)}")
 
     return standardized_image
-
-
-def process_image(image, rotation_angle):
-    processed_image = rotate(image, rotation_angle)
-    processed_image = standardize(processed_image)
-    return processed_image
 
 
 def display_image(image):
@@ -109,17 +105,17 @@ def map_value(n, old_start, old_stop, new_start, new_stop):
     return ((n - old_start) / (old_stop - old_start)) * (new_stop - new_start) + new_start
 
 
-# Assumption: Image takes 48km by 27km
-height = 27.0
-width = 48.0
+# Assumption: Image takes HEIGHT x WIDTH km
+HEIGHT = 18.0
+WIDTH = 24.0
 # TODO: Crop image to kilometer values (grid format, define it)
 def crop_image(normal_image, lat_val, long_val, km=3):
     center_km = (lat_to_km(lat_val), long_to_km(long_val, lat_val))
     print(f"Center km: {center_km}")
 
-    top_left_km = (center_km[0] - width / 2, center_km[1] - height / 2)
+    top_left_km = (center_km[0] - WIDTH / 2, center_km[1] - HEIGHT / 2)
     print(f"Top left km: {top_left_km}")
-    bottom_right_km = (center_km[0] + width / 2, center_km[1] + height / 2)
+    bottom_right_km = (center_km[0] + WIDTH / 2, center_km[1] + HEIGHT / 2)
     print(f"Bottom right km: {bottom_right_km}")
 
     new_top_left = (closest_square(top_left_km[0], km), closest_square(top_left_km[1], km))
@@ -133,15 +129,18 @@ def crop_image(normal_image, lat_val, long_val, km=3):
     pixel_bottom_right = (map_value(new_bottom_right[0], top_left_km[0], bottom_right_km[0], 0, normal_image.shape[0]),
                           map_value(new_bottom_right[1], top_left_km[1], bottom_right_km[1], 0, normal_image.shape[1]),)
 
-    new_center = ((pixel_top_left[0] + pixel_bottom_right[0]) / 2, (pixel_top_left[1] + pixel_bottom_right[1]) / 2)
+    new_center = ((new_top_left[0] + new_bottom_right[0]) / 2, (new_top_left[1] + new_bottom_right[1]) / 2)
     lat_long_center = (km_to_lat(new_center[0]), km_to_long(new_center[1], km_to_lat(new_center[0])))
-    
+    print(f"New center km: {new_center}")
+    print(f"New center lat long: {lat_long_center}")
+
     pixel_top_left = (math.floor(pixel_top_left[0]), math.floor(pixel_top_left[1]))
     pixel_bottom_right = (math.floor(pixel_bottom_right[0]), math.floor(pixel_bottom_right[1]))
     print(f"New pixel top left km: {pixel_top_left}")
     print(f"New pixel bottom right km: {pixel_bottom_right}")
 
-    new_size_km = (new_top_left[0] - new_bottom_right[0], new_top_left[1] - new_bottom_right[1])
+    new_size_km = (-new_top_left[1] + new_bottom_right[1], - new_top_left[0] + new_bottom_right[0])
+    print(f"New size km: {new_size_km}")
 
     return normal_image[pixel_top_left[0]:pixel_bottom_right[0], pixel_top_left[1]:pixel_bottom_right[1]], lat_long_center, new_size_km
 
@@ -149,24 +148,44 @@ def crop_image(normal_image, lat_val, long_val, km=3):
 # TODO: Return 4 lists: pixel rows (top), latitude vals (top),
 #                       pixel cols (left), longitude vals (left)
 # At same index, the values should match up
-def get_square_locations(cropped_image, center_lat_long, size_km, km=3):
-    pixel_rows = [0, 20, 40]
-    pixel_cols = [0, 20, 40]
-    lat_vals = [0.01, 0.02, 0.03]
-    long_vals = [0.01, 0.02, 0.03]
+def get_square_locations(cropped_image, lat_long_center, new_size_km, km=3):
+    pixel_rows = []
+    pixel_cols = []
+
+    num_rows = int(new_size_km[0] / km)
+    num_cols = int(new_size_km[1] / km)
+    lat_vals = [[0 for col in range(num_cols)] for row in range(num_rows)]
+    long_vals = [[0 for col in range(num_cols)] for row in range(num_rows)]
+    # print(f"lat vals: {lat_vals}")
+    # print(f"long vals: {long_vals}")
+
     row_index = 0
-    '''
-    for row in range(0, cropped_image.shape[0], cropped_image.shape[0]/size_km[0]):
-        pixel_rows.append(row)
-        lat_vals.append(center_lat_long[0] - width / 2 + km_to_lat(row_index))
-        row_index += 3
+    for row in range(0, cropped_image.shape[0], int(cropped_image.shape[0] / num_rows)):
+        if (row_index == num_rows):
+            break
+        pixel_rows.append(math.floor(row))
+        for col in range(num_cols):
+            # print(km_to_lat(-WIDTH / 2 + row_index * km))
+            newlat = (lat_long_center[0] + km_to_lat(-HEIGHT / 2 + row_index * km))
+            # print("newlat", newlat)
+            # print(f"Row: {row_index}/{num_rows} || Col: {col}/{num_cols}")
+            lat_vals[row_index][col] = newlat
+        row_index += 1
+    # print(pixel_rows)
+    # print(lat_vals)
+
     col_index = 0
-    for col in range(0, cropped_image.shape[1], cropped_image.shape[1]/size_km[1]):
+    for col in range(0, cropped_image.shape[1], int(cropped_image.shape[1] / num_cols)):
+        if (col_index == num_cols):
+            break
         pixel_cols.append(col)
-        long_vals.append(center_lat_long[1] - height / 2 + km_to_long(col_index))
-        col_index += 3
-    '''
+        for row in range(num_rows):
+            newlong = lat_long_center[1] + km_to_long(-WIDTH / 2 + col_index * km, lat_vals[row][col_index])
+            long_vals[row][col_index] = newlong
+        col_index += 1
+    
     return pixel_rows, pixel_cols, lat_vals, long_vals
+    
 
 
 def count_bright_pixels(section, threshold=120):
@@ -176,7 +195,7 @@ def count_bright_pixels(section, threshold=120):
 
 SQUARE_SIZE = 3
 def split_image(normal_image, lat_val, long_val):
-    # split into 16*9 sections
+    # split into 6*8 sections
     '''
     The approximate conversions are:
     * Latitude: 1 deg = 110.574 km
@@ -193,21 +212,24 @@ def split_image(normal_image, lat_val, long_val):
     for row_index in range(len(pixel_rows)):
         for col_index in range(len(pixel_cols)):
             if (col_index == len(pixel_cols) - 1 or row_index == len(pixel_rows) - 1):
-                pass
+                section = image[pixel_rows[row_index] : image.shape[0] - 1, pixel_cols[col_index] : image.shape[1] - 1]
             else:
                 section = image[pixel_rows[row_index] : pixel_rows[row_index + 1], pixel_cols[col_index] : pixel_cols[col_index + 1]]
-                bright_pixels, total_pixels = count_bright_pixels(section)
-                lat_val = lat_vals[row_index]
-                long_val = long_vals[col_index]
-                now = datetime.datetime.now()
-                data = {
-                    "bright_pixels": bright_pixels,
-                    "total_pixels": total_pixels,
-                    "lat": lat_val,
-                    "long": long_val,
-                    "date": now
-                }
-                section_list.append(data)
+                
+            save_image(section, f"cubesat/image_sections/section-r{row_index}-c{col_index}.jpg")
+            
+            bright_pixels, total_pixels = count_bright_pixels(section)
+            lat_val = lat_vals[row_index][col_index]
+            long_val = long_vals[row_index][col_index]
+            now = datetime.datetime.now()
+            data = {
+                "bright_pixels": bright_pixels,
+                "total_pixels": total_pixels,
+                "lat": lat_val,
+                "long": long_val,
+                "date": now
+            }
+            section_list.append(data)
     return section_list
 
 
@@ -253,7 +275,16 @@ def determine_outage(section_list, threshold=0.0):
         # Save current data to database (cause no outage)
 
 
+def process_image(image, center_lat, center_long, rotation_angle=0):
+    # image = rotate(image, rotation_angle)
+    # image = standardize(image)
+    section_list = split_image(image, center_lat, center_long)
+    determine_outage(section_list)
+    db.print_all()
+
+
 def main():
+    '''
     # db.delete_db()
     db.create()
     arr = np.random.randint(0, 255, (270, 480))
@@ -274,6 +305,18 @@ def main():
     # send_json(section)
     determine_outage(section_list)
     db.print_all()
+    '''
+    image = read_image("cubesat/images/normal1.jpg")
+    split_image(image, 0, 0)
+    # image, new_lat_long, new_size_km = crop_image(image, 0, 0, SQUARE_SIZE)
+    # pixel_rows, pixel_cols, lat_vals, long_vals = get_square_locations(image, new_lat_long, new_size_km, SQUARE_SIZE)
+    # print(image.shape)
+    # print(f"Pixel rows: {pixel_rows}")
+    # print(f"Pixel cols: {pixel_cols}")
+
+    # section_list = split_image(image, 0, 0)
+    # print(image)
+    # process_image()
 
 
 if __name__ == "__main__":
