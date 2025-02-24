@@ -1,0 +1,83 @@
+import sqlite3
+
+
+class PowerInfo:
+    def __init__(self, block_id, bright_avg, bright_pcnt, bright_std, timestamp):
+        self.block_id = block_id
+        self.bright_avg = bright_avg
+        self.bright_pcnt = bright_pcnt
+        self.bright_std = bright_std
+        self.timestamp = timestamp
+
+
+def init():
+    conn = sqlite3.connect('coords.db')
+    cursor = conn.cursor()
+    # All measurements defined from top left of square
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS coordinates(
+            block_id TEXT,
+            bright_avg REAL,
+            bright_pcnt REAL,
+            bright_std REAL, 
+            timestamp INTEGER); 
+        ''')
+
+def clean_up():
+    conn = sqlite3.connect('coords.db')
+    cursor = conn.cursor()
+    cursor.execute('''DROP TABLE coordinates;''')
+    conn.commit()
+    conn.close()
+
+def write_one(power_info: PowerInfo):
+    conn = sqlite3.connect('coords.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        f'''INSERT INTO coordinates VALUES(
+            '{power_info.block_id}', 
+            {power_info.bright_avg}, 
+            {power_info.bright_pcnt}, 
+            {power_info.bright_std}, 
+            {power_info.timestamp});''')
+    conn.commit()
+
+def write_list(power_infos: list[PowerInfo]):
+    for power_info in power_infos:
+        write_one(power_info)
+
+def get_list(block_id: str):
+    conn = sqlite3.connect("coords.db")
+    cursor = conn.cursor()
+    rows = cursor.execute(
+        f'''SELECT * FROM coordinates 
+            WHERE block_id = '{block_id}';''')
+    ret = []
+    for row in rows:
+        #print(row)
+        ret.append(PowerInfo(*row))
+    return ret
+
+def print_all():
+    conn = sqlite3.connect("coords.db")
+    cursor = conn.cursor()
+    rows = cursor.execute('''SELECT * FROM coordinates;''')
+    for i in rows:
+        print(i)
+    conn.close()
+
+def check_size():
+    conn = sqlite3.connect('coords.db')
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA page_count;")
+    page_count = cursor.fetchone()[0]
+    cursor.execute("PRAGMA page_size;")
+    page_size = cursor.fetchone()[0]
+    db_size = page_count * page_size
+    if (db_size > 10*1024*1028*1024):
+        print("delete")
+        cursor.execute("DELETE FROM coordinates WHERE random() > 5534023222112865485;")
+    cursor.close()
+
+if __name__ == "__main__":
+    pass
