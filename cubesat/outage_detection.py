@@ -193,6 +193,13 @@ def count_bright_pixels(section, threshold=120):
     total_pixels = section.size
     return bright_pixels, total_pixels
 
+
+def drawRectangle(image, top_left, bottom_right, color=(255, 0, 255)):
+    thickness = 2
+    cv2.rectangle(image, top_left, bottom_right, (100, 0, 0), thickness)
+    return image
+
+
 SQUARE_SIZE = 3
 def split_image(normal_image, lat_val, long_val):
     # split into 6*8 sections
@@ -208,19 +215,24 @@ def split_image(normal_image, lat_val, long_val):
     # longitude values (left of columns)
     pixel_rows, pixel_cols, lat_vals, long_vals = get_square_locations(image, new_lat_long, new_size_km, SQUARE_SIZE)
 
+    sectioned_image = image.copy()
     section_list = []
     for row_index in range(len(pixel_rows)):
         for col_index in range(len(pixel_cols)):
+            top_left = (pixel_cols[col_index], pixel_rows[row_index])
+            bottom_right = (0, 0)
             if (col_index == len(pixel_cols) - 1 or row_index == len(pixel_rows) - 1):
-                section = image[pixel_rows[row_index] : image.shape[0] - 1, pixel_cols[col_index] : image.shape[1] - 1]
+                bottom_right = (image.shape[1] - 1, image.shape[0] - 1)
             else:
-                section = image[pixel_rows[row_index] : pixel_rows[row_index + 1], pixel_cols[col_index] : pixel_cols[col_index + 1]]
-                
-            save_image(section, f"cubesat/image_sections/section-r{row_index}-c{col_index}.jpg")
+                bottom_right = (pixel_cols[col_index + 1], pixel_rows[row_index + 1])
+            section = image[top_left[1] : bottom_right[1], top_left[0] : bottom_right[0]]
+
+            sectioned_image = drawRectangle(sectioned_image, top_left, bottom_right)                
+            # save_image(section, f"cubesat/image_sections/section-r{row_index}-c{col_index}.jpg")
             
             bright_pixels, total_pixels = count_bright_pixels(section)
-            lat_val = lat_vals[row_index][col_index]
-            long_val = long_vals[row_index][col_index]
+            lat_val = round(lat_vals[row_index][col_index], 4)
+            long_val = round(long_vals[row_index][col_index], 4)
             now = datetime.datetime.now()
             data = {
                 "bright_pixels": bright_pixels,
@@ -230,6 +242,7 @@ def split_image(normal_image, lat_val, long_val):
                 "date": now
             }
             section_list.append(data)
+    save_image(sectioned_image, "cubesat/images/sectioned_image.jpg")
     return section_list
 
 
@@ -259,7 +272,7 @@ def send_json(section):
 
 
 
-def determine_outage(section_list, threshold=0.0):
+def determine_outage(section_list, threshold=0.04):
     for section in section_list:
         # find previous section from database
         prev_section = db.get_one(section["lat"], section["long"])
@@ -307,7 +320,8 @@ def main():
     db.print_all()
     '''
     image = read_image("cubesat/images/normal1.jpg")
-    split_image(image, 0, 0)
+    section_list = split_image(image, 0, 0)
+    print(section_list)
     # image, new_lat_long, new_size_km = crop_image(image, 0, 0, SQUARE_SIZE)
     # pixel_rows, pixel_cols, lat_vals, long_vals = get_square_locations(image, new_lat_long, new_size_km, SQUARE_SIZE)
     # print(image.shape)

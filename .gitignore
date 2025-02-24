@@ -162,3 +162,4 @@ cython_debug/
 .idea/
 coords.db
 cubesat/files_to_send
+.DS_Store
