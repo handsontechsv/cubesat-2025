@@ -24,8 +24,8 @@ Post-Condition:
 
 ### get_filter ###  
 Args:
-- tllat: Top Left Corner Latitude
-- tllong: Top Left Corner Longitude
+- lat_long: String of latitude and longitude, formatted as *latitude "space" longitude*
+  - eg: "123.456 789.010"
 
 Returns:
 - A list of lists with all stored instances of the given coordinates
@@ -33,3 +33,11 @@ Returns:
 ### get  ###
 Returns:
 - A list of lists of all stored data in the database
+
+### getID ##
+Args:
+- Lat: latitude of location
+- Long: longitude of location
+
+Returns:
+- A string containing the lat_long id, formatted a *latitude "space" longitude*

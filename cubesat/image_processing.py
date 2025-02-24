@@ -38,7 +38,7 @@ def process_image(img, top_left_lat=0, top_left_lon=0, bot_right_lat=0.180018002
             data["x_offset"] = km_per_section[1] * x //section_width
             data["y_offset"] = km_per_section[0] * y //section_height
             data["bright_percent"] = count/ (section_height * section_width)
-            data["avg"] = avg;
+            data["avg"] = avg
             data_array.append(data)
 
 
