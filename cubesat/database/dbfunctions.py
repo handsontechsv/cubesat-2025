@@ -46,7 +46,7 @@ def get_one(lat, lng):
     rows = cursor.execute(f'''SELECT * FROM coordinates WHERE Top_Left_Lat = {lat} AND Top_Left_Long = {lng}''')
     ret = []
     for row in rows:
-        print(row)
+        # print(row)
         ret.append(DbCell(*row))
     return ret
 

@@ -106,23 +106,23 @@ def map_value(n, old_start, old_stop, new_start, new_stop):
 
 
 # Assumption: Image takes HEIGHT x WIDTH km
-HEIGHT = 18.0
-WIDTH = 24.0
+HEIGHT = 36.0 * 1.3
+WIDTH = 48.0 * 1.3
 # TODO: Crop image to kilometer values (grid format, define it)
 def crop_image(normal_image, lat_val, long_val, km=3):
     center_km = (lat_to_km(lat_val), long_to_km(long_val, lat_val))
-    print(f"Center km: {center_km}")
+    # print(f"Center km: {center_km}")
 
     top_left_km = (center_km[0] - WIDTH / 2, center_km[1] - HEIGHT / 2)
-    print(f"Top left km: {top_left_km}")
+    # print(f"Top left km: {top_left_km}")
     bottom_right_km = (center_km[0] + WIDTH / 2, center_km[1] + HEIGHT / 2)
-    print(f"Bottom right km: {bottom_right_km}")
+    # print(f"Bottom right km: {bottom_right_km}")
 
     new_top_left = (closest_square(top_left_km[0], km), closest_square(top_left_km[1], km))
-    print(f"New top left km: {new_top_left}")
+    # print(f"New top left km: {new_top_left}")
 
     new_bottom_right = (closest_square(bottom_right_km[0], km), closest_square(bottom_right_km[1], km))
-    print(f"New bottom right km: {new_bottom_right}")
+    # print(f"New bottom right km: {new_bottom_right}")
 
     pixel_top_left = (map_value(new_top_left[0], top_left_km[0], bottom_right_km[0], 0, normal_image.shape[0]),
                       map_value(new_top_left[1], top_left_km[1], bottom_right_km[1], 0, normal_image.shape[1]),)
@@ -131,16 +131,16 @@ def crop_image(normal_image, lat_val, long_val, km=3):
 
     new_center = ((new_top_left[0] + new_bottom_right[0]) / 2, (new_top_left[1] + new_bottom_right[1]) / 2)
     lat_long_center = (km_to_lat(new_center[0]), km_to_long(new_center[1], km_to_lat(new_center[0])))
-    print(f"New center km: {new_center}")
-    print(f"New center lat long: {lat_long_center}")
+    # print(f"New center km: {new_center}")
+    # print(f"New center lat long: {lat_long_center}")
 
     pixel_top_left = (math.floor(pixel_top_left[0]), math.floor(pixel_top_left[1]))
     pixel_bottom_right = (math.floor(pixel_bottom_right[0]), math.floor(pixel_bottom_right[1]))
-    print(f"New pixel top left km: {pixel_top_left}")
-    print(f"New pixel bottom right km: {pixel_bottom_right}")
+    # print(f"New pixel top left km: {pixel_top_left}")
+    # print(f"New pixel bottom right km: {pixel_bottom_right}")
 
     new_size_km = (-new_top_left[1] + new_bottom_right[1], - new_top_left[0] + new_bottom_right[0])
-    print(f"New size km: {new_size_km}")
+    # print(f"New size km: {new_size_km}")
 
     return normal_image[pixel_top_left[0]:pixel_bottom_right[0], pixel_top_left[1]:pixel_bottom_right[1]], lat_long_center, new_size_km
 
@@ -239,16 +239,18 @@ def split_image(normal_image, lat_val, long_val):
                 "total_pixels": total_pixels,
                 "lat": lat_val,
                 "long": long_val,
-                "date": now
+                "date": now,
+                "top_left": top_left,
+                "bottom_right": bottom_right,
             }
             section_list.append(data)
     save_image(sectioned_image, "cubesat/images/sectioned_image.jpg")
     return section_list
 
 
-def detect_outage(section_bright, section_total, normal_bright, normal_total, threshold=0):
-    print('all params:', section_bright, section_total, normal_bright, normal_total)
-    return (section_bright / section_total - normal_bright / normal_total) > threshold
+def detect_outage(section_bright, section_total, normal_bright, normal_total, threshold=0.01):
+    # print('all params:', section_bright, section_total, normal_bright, normal_total)
+    return (-section_bright / section_total + normal_bright / normal_total) > threshold
 
 
 def send_json(section):
@@ -271,8 +273,16 @@ def send_json(section):
     print(f"JSON data saved to {filename}")
 
 
+def draw_rects(coord_list, image):
+    for coord in coord_list:
+        top_left = coord[0]
+        bottom_right = coord[1]
+        image = drawRectangle(image, top_left, bottom_right)
+    return image
 
-def determine_outage(section_list, threshold=0.04):
+
+def determine_outage(section_list, threshold=0.01):
+    coords = []
     for section in section_list:
         # find previous section from database
         prev_section = db.get_one(section["lat"], section["long"])
@@ -282,24 +292,42 @@ def determine_outage(section_list, threshold=0.04):
                 # THERE HAS BEEN AN OUTAGE!!
                 # Send json to ground station!
                 send_json(section)
+                coords.append((section["top_left"], section["bottom_right"]))
                 continue
         db.write_one(section["lat"], section["long"], section["bright_pixels"], section["total_pixels"], section["date"])
         # THERE HAS NOT BEEN AN OUTAGE!!
         # Save current data to database (cause no outage)
+    return coords
 
 
-def process_image(image, center_lat, center_long, rotation_angle=0):
+def process_image(image, center_lat, center_long, rotation_angle=0, graphics=False):
     # image = rotate(image, rotation_angle)
     # image = standardize(image)
     section_list = split_image(image, center_lat, center_long)
-    determine_outage(section_list)
-    db.print_all()
+
+    array = []
+    row = []
+    col = 0
+    for section in section_list:
+        row.append(section["bright_pixels"]/section["total_pixels"])
+        col += 1
+        if (col == WIDTH / SQUARE_SIZE):
+            array.append(row)
+            row = []
+            col = 0
+    for row in array:
+        print(" ".join(f"{num:7}" for num in row))
+    pixels = determine_outage(section_list)
+    if graphics:
+        image_to_display = image.copy()
+        print(pixels)
+        image_to_display = draw_rects(pixels, image_to_display)
+        save_image(image_to_display, "cubesat/images/outage_sections.jpg")
+    # db.print_all()
 
 
 def main():
     '''
-    # db.delete_db()
-    db.create()
     arr = np.random.randint(0, 255, (270, 480))
     # print(f"Original array: {arr}")
     print(f"Original array shape: {arr.shape}")
@@ -319,9 +347,16 @@ def main():
     determine_outage(section_list)
     db.print_all()
     '''
-    image = read_image("cubesat/images/normal1.jpg")
-    section_list = split_image(image, 0, 0)
-    print(section_list)
+
+    db.delete_db()
+    db.create()
+
+    reg_image = read_image("cubesat/images/normal1.jpg")
+    blackout_image = read_image("cubesat/images/normal1_blackout3.jpg")
+    print("Regular image: ")
+    process_image(reg_image, 0, 0, graphics=False)
+    print("Outage image: ")
+    process_image(blackout_image, 0, 0, graphics=True)
     # image, new_lat_long, new_size_km = crop_image(image, 0, 0, SQUARE_SIZE)
     # pixel_rows, pixel_cols, lat_vals, long_vals = get_square_locations(image, new_lat_long, new_size_km, SQUARE_SIZE)
     # print(image.shape)
